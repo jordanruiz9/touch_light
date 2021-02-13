@@ -24,9 +24,7 @@ String touchEventName = "touch_event";
 String particleId[] = {
   "",                         // 0
   "4f0022001051373331333230", // ruruweezy
-  "2c0037001447363336383438", // turtlebean
-  "2a0026000b47353235303037", // cindy
-  "2e003e001947353236343033"  // tammy
+  "2c0037001447363336383438" // turtlebean
 };
 
 int particleColors[] = {
@@ -163,7 +161,7 @@ void setup()
   strip.show(); // Initialize all pixels to 'off'
 
   pinMode(sPin, OUTPUT);
-  pinmode(rPin, INPUT);
+  pinMode(rPin, INPUT);
   digitalWrite(sPin, HIGH);
 
   myId = getMyId(particleId, NUM_PARTICLES);
@@ -186,6 +184,7 @@ void loop() {
   }
 
   loop_number++;
+
   int touchEvent = switchEventCheck();
   int now = Time.now();
 
@@ -355,19 +354,37 @@ void touchSense() {
 //------------------------------------------------------------
 int switchEventCheck() {
   int touchSense;                     // current reading
+  static int touchSenseLast = LOW;    // last reading
+
+  static unsigned long touchDebounceTimeLast = 0; // debounce timer
+  int touchDebounceTime = 50;                     // debounce time
 
   static int touchNow = LOW;  // current debounced state
   static int touchLast = LOW; // last debounced state
 
   int tEvent = tEVENT_NONE;   // default event
 
-   if (digitalRead(rPin) == HIGH) {
+  // read touch sensor
+  long tReading = touchSampling();
+
+  // touch sensor is HIGH if trigger point some threshold above Baseline
+  if (tReading > (tBaseline + tBaseline / SENSITIVITY)) {
     touchSense = HIGH;
   } else {
     touchSense = LOW;
   }
-  
- touchNow = touchSense;
+
+  // debounce touch sensor
+  // if state changed then reset debounce timer
+  if (touchSense != touchSenseLast) {
+    touchDebounceTimeLast = millis();
+  }
+  touchSenseLast = touchSense;
+
+  // accept as a stable sensor reading if the debounce time is exceeded without reset
+  if (millis() > touchDebounceTimeLast + touchDebounceTime) {
+    touchNow = touchSense;
+  }
 
   // set events based on transitions between readings
   if (!touchLast && touchNow) {
