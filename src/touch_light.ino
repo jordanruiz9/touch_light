@@ -19,12 +19,12 @@
 
 String touchEventName = "touch_event";
 
-#define NUM_PARTICLES 4 // number of touch lights in your group
+#define NUM_PARTICLES 2 // number of touch lights in your group
 // Number each Filimin starting at 1.
 String particleId[] = {
   "",                         // 0
-  "330022001547353236343033", // pblesi
-  "2d0047001247353236343033", // carol
+  "4f0022001051373331333230", // ruruweezy
+  "2c0037001447363336383438", // turtlebean
   "2a0026000b47353235303037", // cindy
   "2e003e001947353236343033"  // tammy
 };
