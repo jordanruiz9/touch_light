@@ -186,14 +186,13 @@ void loop() {
   loop_number++;
 
   int touchEvent = switchEventCheck();
-  int now = Time.now();
 
   if (touchEvent == tEVENT_NONE) {
     // Publish periodic updates to synchronize state
     bool touchedBefore = currentEvent != tEVENT_NONE;
-    if (lastPeriodicUpdate < now - PERIODIC_UPDATE_TIME && touchedBefore) {
+    if (lastPeriodicUpdate < Time.now() - PERIODIC_UPDATE_TIME && touchedBefore) {
       publishTouchEvent(currentEvent, finalColor, eventTime, eventTimePrecision);
-      lastPeriodicUpdate = now;
+      lastPeriodicUpdate = Time.now();
     }
     return;
   }
@@ -201,7 +200,7 @@ void loop() {
   // Random eventTimePrecision prevents ties with other
   // server events. This allows us to determine dominant
   // color in the event of ties.
-  setEvent(touchEvent, now, random(INT_MAX));
+  setEvent(touchEvent, Time.now(), random(INT_MAX));
 
   if (D_SERIAL) Serial.println(eventTypes[touchEvent]);
   if (touchEvent == tEVENT_TOUCH) {
@@ -343,6 +342,46 @@ void touchSense() {
   tR = micros();
 }
 
+
+//------------------------------------------------------------
+// switch event check
+//
+// check manual switch for events:
+//      tEVENT_NONE     no change
+//      tEVENT_TOUCH    sensor is touched (Low to High)
+//      tEVENT_RELEASE  sensor is released (High to Low)
+//
+//------------------------------------------------------------
+int switchEventCheck() {
+  int touchSense;             // current reading
+
+  static int touchNow = LOW;  // current debounced state
+  static int touchLast = LOW; // last debounced state
+
+  int tEvent = tEVENT_NONE;   // default event
+
+  if (digitalRead(rPin) == HIGH) {
+    touchSense = HIGH;
+  } else {
+    touchSense = LOW;
+  }
+
+  touchNow = touchSense;
+
+  // set events based on transitions between readings
+  if (!touchLast && touchNow) {
+    tEvent = tEVENT_TOUCH;
+  }
+
+  if (touchLast && !touchNow) {
+    tEvent = tEVENT_RELEASE;
+  }
+
+  // update last reading
+  touchLast = touchNow;
+  return tEvent;
+}
+
 //------------------------------------------------------------
 // touch event check
 //
@@ -352,7 +391,7 @@ void touchSense() {
 //      tEVENT_RELEASE  sensor is released (High to Low)
 //
 //------------------------------------------------------------
-int switchEventCheck() {
+int touchEventCheck() {
   int touchSense;                     // current reading
   static int touchSenseLast = LOW;    // last reading
 
