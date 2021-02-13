@@ -102,7 +102,7 @@ int rPin = D3;
 
 // NEOPIXEL
 #define PIXEL_PIN D2
-#define PIXEL_COUNT 24
+#define PIXEL_COUNT 12
 #define PIXEL_TYPE WS2812B
 
 // STATE
@@ -163,7 +163,8 @@ void setup()
   strip.show(); // Initialize all pixels to 'off'
 
   pinMode(sPin, OUTPUT);
-  attachInterrupt(rPin, touchSense, RISING);
+  pinmode(rPin, INPUT);
+  digitalWrite(sPin, HIGH);
 
   myId = getMyId(particleId, NUM_PARTICLES);
 
@@ -178,7 +179,14 @@ void setup()
 }
 
 void loop() {
-  int touchEvent = touchEventCheck();
+  static int loop_number = 0;
+
+  if (!(loop_number % SAMPLES_BETWEEN_PIXEL_UPDATES)) {
+    updateState();
+  }
+
+  loop_number++;
+  int touchEvent = switchEventCheck();
   int now = Time.now();
 
   if (touchEvent == tEVENT_NONE) {
@@ -345,39 +353,21 @@ void touchSense() {
 //      tEVENT_RELEASE  sensor is released (High to Low)
 //
 //------------------------------------------------------------
-int touchEventCheck() {
+int switchEventCheck() {
   int touchSense;                     // current reading
-  static int touchSenseLast = LOW;    // last reading
-
-  static unsigned long touchDebounceTimeLast = 0; // debounce timer
-  int touchDebounceTime = 50;                     // debounce time
 
   static int touchNow = LOW;  // current debounced state
   static int touchLast = LOW; // last debounced state
 
   int tEvent = tEVENT_NONE;   // default event
 
-  // read touch sensor
-  long tReading = touchSampling();
-
-  // touch sensor is HIGH if trigger point some threshold above Baseline
-  if (tReading > (tBaseline + tBaseline / SENSITIVITY)) {
+   if (digitalRead(rPin) == HIGH) {
     touchSense = HIGH;
   } else {
     touchSense = LOW;
   }
-
-  // debounce touch sensor
-  // if state changed then reset debounce timer
-  if (touchSense != touchSenseLast) {
-    touchDebounceTimeLast = millis();
-  }
-  touchSenseLast = touchSense;
-
-  // accept as a stable sensor reading if the debounce time is exceeded without reset
-  if (millis() > touchDebounceTimeLast + touchDebounceTime) {
-    touchNow = touchSense;
-  }
+  
+ touchNow = touchSense;
 
   // set events based on transitions between readings
   if (!touchLast && touchNow) {
